@@ -92,12 +92,26 @@
     
     // 材料登録フォーム送信
     function submitMaterial() {
+        // バリデーション
+        const diameter = parseFloat(document.getElementById('diameter').value);
+        const effectiveLength = parseFloat(document.getElementById('effectiveLength').value);
+        
+        if (!diameter || diameter <= 0) {
+            if (typeof showAlert === 'function') showAlert('管径を正しく入力してください', 'error');
+            return;
+        }
+        
+        if (!effectiveLength || effectiveLength <= 0) {
+            if (typeof showAlert === 'function') showAlert('有効長を正しく入力してください', 'error');
+            return;
+        }
+        
         const material = {
             id: Date.now(),
             materialType: document.getElementById('materialType').value,
             angle: parseFloat(document.getElementById('angle').value) || null,
-            diameter: parseFloat(document.getElementById('diameter').value),
-            effectiveLength: parseFloat(document.getElementById('effectiveLength').value),
+            diameter: diameter,
+            effectiveLength: effectiveLength,
             radius: parseFloat(document.getElementById('radius').value) || null,
             insertLength: parseFloat(document.getElementById('insertLength').value) || null,
             unitPrice: parseFloat(document.getElementById('unitPrice').value) || null,
@@ -107,17 +121,84 @@
             createdAt: new Date().toISOString()
         };
 
-        // window.materialsに追加
-        if (!window.materials) window.materials = [];
-        window.materials.push(material);
+        // グローバルmaterials配列に追加（window経由でアクセス）
+        if (typeof window.materials !== 'undefined') {
+            window.materials.push(material);
+            // localStorageに保存
+            localStorage.setItem('pipeMaterials', JSON.stringify(window.materials));
+        } else {
+            // フォールバック
+            const saved = localStorage.getItem('pipeMaterials');
+            const materials = saved ? JSON.parse(saved) : [];
+            materials.push(material);
+            localStorage.setItem('pipeMaterials', JSON.stringify(materials));
+        }
         
-        // localStorageに保存
-        localStorage.setItem('pipeMaterials', JSON.stringify(window.materials));
-        
-        // 他の関数を呼び出し
+        // 画面更新
         if (typeof updateDiameterOptions === 'function') updateDiameterOptions();
+        if (typeof displayMaterials === 'function') displayMaterials();
+        if (typeof updateStats === 'function') updateStats();
         if (typeof clearForm === 'function') clearForm();
         if (typeof showAlert === 'function') showAlert('材料を登録しました', 'success');
+    }
+    
+    // 材料編集フォーム送信
+    function saveEditMaterial() {
+        const id = parseInt(document.getElementById('editId').value);
+        
+        // バリデーション
+        const diameter = parseFloat(document.getElementById('editDiameter').value);
+        const effectiveLength = parseFloat(document.getElementById('editEffectiveLength').value);
+        
+        if (!diameter || diameter <= 0) {
+            if (typeof showAlert === 'function') showAlert('管径を正しく入力してください', 'error');
+            return;
+        }
+        
+        if (!effectiveLength || effectiveLength <= 0) {
+            if (typeof showAlert === 'function') showAlert('有効長を正しく入力してください', 'error');
+            return;
+        }
+        
+        // localStorageから読み込み
+        const saved = localStorage.getItem('pipeMaterials');
+        let materials = saved ? JSON.parse(saved) : [];
+        
+        const index = materials.findIndex(m => m.id === id);
+        
+        if (index !== -1) {
+            materials[index] = {
+                ...materials[index],
+                materialType: document.getElementById('editType').value,
+                angle: parseFloat(document.getElementById('editAngle').value) || null,
+                diameter: diameter,
+                effectiveLength: effectiveLength,
+                radius: parseFloat(document.getElementById('editRadius').value) || null,
+                insertLength: parseFloat(document.getElementById('editInsertLength').value) || null,
+                unitPrice: parseFloat(document.getElementById('editUnitPrice').value) || null,
+                maker: document.getElementById('editMaker').value,
+                partNumber: document.getElementById('editPartNumber').value,
+                notes: document.getElementById('editNotes').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            // 保存
+            localStorage.setItem('pipeMaterials', JSON.stringify(materials));
+            window.materials = materials;
+            
+            // 画面更新
+            if (typeof displayMaterials === 'function') displayMaterials();
+            if (typeof updateStats === 'function') updateStats();
+            if (typeof updateDiameterOptions === 'function') updateDiameterOptions();
+            if (typeof closeEditModal === 'function') closeEditModal();
+            if (typeof showAlert === 'function') showAlert('材料を更新しました', 'success');
+        }
+    }
+    
+    // 編集モーダルを閉じる
+    function closeEditModal() {
+        const modal = document.getElementById('editModal');
+        if (modal) modal.classList.remove('active');
     }
 </script>
 
@@ -1076,7 +1157,7 @@
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">材料編集</div>
-        <form id="editForm">
+        <div id="editForm">
             <input type="hidden" id="editId">
             <div class="form-grid">
                 <div class="form-group">
@@ -1126,10 +1207,10 @@
                 </div>
             </div>
             <div class="button-group" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-primary">💾 更新</button>
+                <button type="button" class="btn btn-primary" onclick="saveEditMaterial()">💾 更新</button>
                 <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ キャンセル</button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -1339,41 +1420,6 @@
         document.getElementById('editModal').classList.add('active');
     }
 
-    // 編集フォーム送信
-    document.getElementById('editForm').onsubmit = function(e) {
-        e.preventDefault();
-        
-        const id = parseInt(document.getElementById('editId').value);
-        const index = materials.findIndex(m => m.id === id);
-        
-        if (index !== -1) {
-            materials[index] = {
-                ...materials[index],
-                materialType: document.getElementById('editType').value,
-                angle: parseFloat(document.getElementById('editAngle').value) || null,
-                diameter: parseFloat(document.getElementById('editDiameter').value),
-                effectiveLength: parseFloat(document.getElementById('editEffectiveLength').value),
-                radius: parseFloat(document.getElementById('editRadius').value) || null,
-                insertLength: parseFloat(document.getElementById('editInsertLength').value) || null,
-                unitPrice: parseFloat(document.getElementById('editUnitPrice').value) || null,
-                maker: document.getElementById('editMaker').value,
-                partNumber: document.getElementById('editPartNumber').value,
-                notes: document.getElementById('editNotes').value,
-                updatedAt: new Date().toISOString()
-            };
-
-            saveMaterials();
-            displayMaterials();
-            updateStats();
-            closeEditModal();
-            showAlert('材料を更新しました', 'success');
-        }
-    };
-
-    function closeEditModal() {
-        document.getElementById('editModal').classList.remove('active');
-    }
-
     // 材料コピー
     function copyMaterial(id) {
         const material = materials.find(m => m.id === id);
@@ -1387,6 +1433,7 @@
         };
 
         materials.push(newMaterial);
+        window.materials = materials; // 同期
         saveMaterials();
         displayMaterials();
         updateStats();
@@ -1398,6 +1445,7 @@
         if (!confirm('この材料を削除してもよろしいですか?')) return;
 
         materials = materials.filter(m => m.id !== id);
+        window.materials = materials; // 同期
         saveMaterials();
         displayMaterials();
         updateStats();
@@ -2563,6 +2611,17 @@
             diameter: parseFloat(document.getElementById('line2_diameter').value)
         };
   
+        // 座標バリデーション
+        const coords = [
+            line1.startX, line1.startY, line1.startZ, line1.endX, line1.endY, line1.endZ,
+            line2.startX, line2.startY, line2.startZ, line2.endX, line2.endY, line2.endZ
+        ];
+        
+        if (coords.some(c => isNaN(c))) {
+            showCalcAlert('法線1・2の座標をすべて入力してください', 'error');
+            return;
+        }
+        
         // バリデーション
         if (isNaN(line1.diameter) || isNaN(line2.diameter)) {
             showCalcAlert('管径を選択してください', 'error');
@@ -2579,7 +2638,7 @@
         }
   
         if (isNaN(middleLength) || middleLength <= 0) {
-            showCalcAlert('中間直管の距離を入力してください', 'error');
+            showCalcAlert('中間直管の距離を正しく入力してください', 'error');
             return;
         }
   
@@ -2587,7 +2646,7 @@
         const bend2 = materials.find(m => m.id == bend2Id);
   
         if (!bend1 || !bend2) {
-            showCalcAlert('曲管が見つかりません', 'error');
+            showCalcAlert('曲管が見つかりません。材料マスターに曲管を登録してください', 'error');
             return;
         }
   
