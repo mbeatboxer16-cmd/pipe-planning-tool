@@ -91,9 +91,7 @@
     }
     
     // 材料登録フォーム送信
-    function submitMaterial(e) {
-        e.preventDefault();
-        
+    function submitMaterial() {
         const material = {
             id: Date.now(),
             materialType: document.getElementById('materialType').value,
@@ -120,8 +118,6 @@
         if (typeof updateDiameterOptions === 'function') updateDiameterOptions();
         if (typeof clearForm === 'function') clearForm();
         if (typeof showAlert === 'function') showAlert('材料を登録しました', 'success');
-        
-        return false;
     }
 </script>
 
@@ -607,7 +603,7 @@
             <div id="alertContainer"></div>
 
             <h2 style="margin-bottom: 15px;">材料情報入力</h2>
-            <form id="materialForm" onsubmit="return submitMaterial(event)">
+            <div id="materialForm">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>材料種別 *</label>
@@ -657,10 +653,10 @@
                 </div>
 
                 <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 登録</button>
+                    <button type="button" class="btn btn-primary" onclick="submitMaterial()">💾 登録</button>
                     <button type="button" class="btn btn-secondary" onclick="clearForm()">🔄 クリア</button>
                 </div>
-            </form>
+            </div>
         </div>
 
         <!-- 材料一覧セクション -->
@@ -1178,7 +1174,16 @@
 
     // フォームクリア
     function clearForm() {
-        document.getElementById('materialForm').reset();
+        document.getElementById('materialType').value = '直管';
+        document.getElementById('angle').value = '';
+        document.getElementById('diameter').value = '';
+        document.getElementById('effectiveLength').value = '';
+        document.getElementById('radius').value = '';
+        document.getElementById('insertLength').value = '';
+        document.getElementById('unitPrice').value = '';
+        document.getElementById('maker').value = '';
+        document.getElementById('partNumber').value = '';
+        document.getElementById('notes').value = '';
     }
 
     // データ保存
