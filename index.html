@@ -89,6 +89,40 @@
             if (typeof showAlert === 'function') showAlert('テンプレートを読み込みました', 'success');
         }
     }
+    
+    // 材料登録フォーム送信
+    function submitMaterial(e) {
+        e.preventDefault();
+        
+        const material = {
+            id: Date.now(),
+            materialType: document.getElementById('materialType').value,
+            angle: parseFloat(document.getElementById('angle').value) || null,
+            diameter: parseFloat(document.getElementById('diameter').value),
+            effectiveLength: parseFloat(document.getElementById('effectiveLength').value),
+            radius: parseFloat(document.getElementById('radius').value) || null,
+            insertLength: parseFloat(document.getElementById('insertLength').value) || null,
+            unitPrice: parseFloat(document.getElementById('unitPrice').value) || null,
+            maker: document.getElementById('maker').value,
+            partNumber: document.getElementById('partNumber').value,
+            notes: document.getElementById('notes').value,
+            createdAt: new Date().toISOString()
+        };
+
+        // window.materialsに追加
+        if (!window.materials) window.materials = [];
+        window.materials.push(material);
+        
+        // localStorageに保存
+        localStorage.setItem('pipeMaterials', JSON.stringify(window.materials));
+        
+        // 他の関数を呼び出し
+        if (typeof updateDiameterOptions === 'function') updateDiameterOptions();
+        if (typeof clearForm === 'function') clearForm();
+        if (typeof showAlert === 'function') showAlert('材料を登録しました', 'success');
+        
+        return false;
+    }
 </script>
 
 <style>
@@ -573,7 +607,7 @@
             <div id="alertContainer"></div>
 
             <h2 style="margin-bottom: 15px;">材料情報入力</h2>
-            <form id="materialForm">
+            <form id="materialForm" onsubmit="return submitMaterial(event)">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>材料種別 *</label>
@@ -1108,6 +1142,7 @@
     
     // データストレージ
     let materials = [];
+    window.materials = materials; // グローバルアクセス用
     let editingId = null;
     let aiExtractedMaterials = [];
     let calculationResults = null;
@@ -1141,31 +1176,6 @@
         }, 100);
     }
 
-    // フォーム送信
-    document.getElementById('materialForm').onsubmit = function(e) {
-        e.preventDefault();
-        
-        const material = {
-            id: Date.now(),
-            materialType: document.getElementById('materialType').value,
-            angle: parseFloat(document.getElementById('angle').value) || null,
-            diameter: parseFloat(document.getElementById('diameter').value),
-            effectiveLength: parseFloat(document.getElementById('effectiveLength').value),
-            radius: parseFloat(document.getElementById('radius').value) || null,
-            insertLength: parseFloat(document.getElementById('insertLength').value) || null,
-            unitPrice: parseFloat(document.getElementById('unitPrice').value) || null,
-            maker: document.getElementById('maker').value,
-            partNumber: document.getElementById('partNumber').value,
-            notes: document.getElementById('notes').value,
-            createdAt: new Date().toISOString()
-        };
-
-        materials.push(material);
-        saveMaterials();
-        clearForm();
-        showAlert('材料を登録しました', 'success');
-    };
-
     // フォームクリア
     function clearForm() {
         document.getElementById('materialForm').reset();
@@ -1173,6 +1183,10 @@
 
     // データ保存
     function saveMaterials() {
+        // window.materialsとローカルmaterialsを同期
+        if (window.materials) {
+            materials = window.materials;
+        }
         localStorage.setItem('pipeMaterials', JSON.stringify(materials));
         updateDiameterOptions(); // 管径選択肢を更新
     }
@@ -1182,6 +1196,9 @@
         const saved = localStorage.getItem('pipeMaterials');
         if (saved) {
             materials = JSON.parse(saved);
+            window.materials = materials; // グローバル変数も同期
+        } else {
+            window.materials = materials; // 空配列を同期
         }
     }
 
