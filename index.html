@@ -7,14 +7,97 @@
     <title>配管計画ツール - 材料マスター管理</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
 ```
+<!-- 即座に読み込まれる関数定義 -->
+<script>
+    // onclick属性から呼び出される関数を先に定義
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+
+        if (tabName === 'list') {
+            if (typeof displayMaterials === 'function') displayMaterials();
+            if (typeof updateStats === 'function') updateStats();
+        }
+    }
+    
+    // テンプレートデータ（グローバル）
+    window.templates = {
+        'bend_45_300': {
+            materialType: '曲管',
+            angle: 45,
+            diameter: 300,
+            effectiveLength: 450,
+            radius: 600,
+            insertLength: 120,
+            unitPrice: 15000,
+            maker: '積水樹脂',
+            partNumber: 'ABC-300-45'
+        },
+        'bend_45_400': {
+            materialType: '曲管',
+            angle: 45,
+            diameter: 400,
+            effectiveLength: 600,
+            radius: 800,
+            insertLength: 150,
+            unitPrice: 22000,
+            maker: '積水樹脂',
+            partNumber: 'ABC-400-45'
+        },
+        'bend_22_300': {
+            materialType: '曲管',
+            angle: 22.5,
+            diameter: 300,
+            effectiveLength: 300,
+            radius: 600,
+            insertLength: 120,
+            unitPrice: 12000,
+            maker: '積水樹脂',
+            partNumber: 'ABC-300-22'
+        },
+        'bend_11_300': {
+            materialType: '曲管',
+            angle: 11.25,
+            diameter: 300,
+            effectiveLength: 200,
+            radius: 600,
+            insertLength: 120,
+            unitPrice: 10000,
+            maker: '積水樹脂',
+            partNumber: 'ABC-300-11'
+        }
+    };
+    
+    function loadTemplate(templateId) {
+        const template = window.templates[templateId];
+        if (template) {
+            document.getElementById('materialType').value = template.materialType;
+            document.getElementById('angle').value = template.angle;
+            document.getElementById('diameter').value = template.diameter;
+            document.getElementById('effectiveLength').value = template.effectiveLength;
+            document.getElementById('radius').value = template.radius;
+            document.getElementById('insertLength').value = template.insertLength;
+            document.getElementById('unitPrice').value = template.unitPrice;
+            document.getElementById('maker').value = template.maker;
+            document.getElementById('partNumber').value = template.partNumber;
+            
+            if (typeof showAlert === 'function') showAlert('テンプレートを読み込みました', 'success');
+        }
+    }
+</script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
     body {
         font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1038,54 +1121,6 @@
     let gridHelper, axesHelper;
     let pipeGroup;
 
-    // テンプレートデータ
-    const templates = {
-        'bend_45_300': {
-            materialType: '曲管',
-            angle: 45,
-            diameter: 300,
-            effectiveLength: 450,
-            radius: 600,
-            insertLength: 120,
-            unitPrice: 15000,
-            maker: '積水樹脂',
-            partNumber: 'ABC-300-45'
-        },
-        'bend_45_400': {
-            materialType: '曲管',
-            angle: 45,
-            diameter: 400,
-            effectiveLength: 600,
-            radius: 800,
-            insertLength: 150,
-            unitPrice: 22000,
-            maker: '積水樹脂',
-            partNumber: 'ABC-400-45'
-        },
-        'bend_22_300': {
-            materialType: '曲管',
-            angle: 22.5,
-            diameter: 300,
-            effectiveLength: 300,
-            radius: 600,
-            insertLength: 120,
-            unitPrice: 12000,
-            maker: '積水樹脂',
-            partNumber: 'ABC-300-22'
-        },
-        'bend_11_300': {
-            materialType: '曲管',
-            angle: 11.25,
-            diameter: 300,
-            effectiveLength: 200,
-            radius: 600,
-            insertLength: 120,
-            unitPrice: 10000,
-            maker: '積水樹脂',
-            partNumber: 'ABC-300-11'
-        }
-    };
-
     // 初期化
     document.addEventListener('DOMContentLoaded', function() {
         loadMaterials();
@@ -1104,38 +1139,6 @@
             updateDiameterOptions();
             setupCalculationListeners();
         }, 100);
-    }
-
-    // タブ切り替え
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        
-        event.target.classList.add('active');
-        document.getElementById(tabName).classList.add('active');
-
-        if (tabName === 'list') {
-            displayMaterials();
-            updateStats();
-        }
-    }
-
-    // テンプレート読み込み
-    function loadTemplate(templateId) {
-        const template = templates[templateId];
-        if (template) {
-            document.getElementById('materialType').value = template.materialType;
-            document.getElementById('angle').value = template.angle;
-            document.getElementById('diameter').value = template.diameter;
-            document.getElementById('effectiveLength').value = template.effectiveLength;
-            document.getElementById('radius').value = template.radius;
-            document.getElementById('insertLength').value = template.insertLength;
-            document.getElementById('unitPrice').value = template.unitPrice;
-            document.getElementById('maker').value = template.maker;
-            document.getElementById('partNumber').value = template.partNumber;
-            
-            showAlert('テンプレートを読み込みました', 'success');
-        }
     }
 
     // フォーム送信
